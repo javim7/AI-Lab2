@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bayesiannetworkx"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = ["javim7 <61723252+javim7@users.noreply.github.com>"]
 readme = "README.md"
