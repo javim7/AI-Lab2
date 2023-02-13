@@ -45,21 +45,17 @@ P(R,T,A,J,M) = P(R)P(T)P(A|R,T)P(J|A)P(M|A)
   +-----------+----------+-------+-------+
   |           |   0, 0   | 0.999 | 0.001 |
   +-----------+----------+-------+-------+
-  |           |   0, 1   |  0.71 |  0.29 |
-  +-----------+----------+-------+-------+
-  |           |   1, 0   |  0.06 |  0.94 |
-  +-----------+----------+-------+-------+
-  |           |   1, 1   |  0.05 |  0.95 |
-  +-----------+----------+-------+-------+
-  |   P(J|A)  |          |       |       |
-  +-----------+----------+-------+-------+
-  |           |    0     |  0.95 |  0.05 |
-  +-----------+----------+-------+-------+
   |           |    1     |  0.1  |  0.9  |
+  +-----------+----------+-------+-------+
+  |   P(M|A)  |          |       |       |
+  +-----------+----------+-------+-------+
+  |           |    0     |  0.99 |  0.01 |
+  +-----------+----------+-------+-------+
+  |           |    1     |  0.3  |  0.7  |
   +-----------+----------+-------+-------+
   ```
 
-- `enumaration_ask(variables, evidence)`: Imprime la probabilidad de distribucion de una variable, dado evidencia de otras variables de la red. El parametro de variables, es una lista de las variables de quines obtener los resultados. Y el parametro evidence es un diccionario que contiene los valores de las variables dadas. Ejemplo: `bn.enumaration("R", {"J": 1, "M": 1})` Retorna un string de la siguiente manera:
+- `enumaration_ask(variables, evidence)`: Imprime la probabilidad de distribucion de una variable, dado evidencia de otras variables de la red. El parametro de variables, es una lista de las variables de quines obtener los resultados. Y el parametro evidence es un diccionario que contiene los valores de las variables dadas. Ejemplo: `bn.enumaration_ask("R", {"J": 1, "M": 1})` Retorna un string de la siguiente manera:
 ```python
 defaultdict(<class 'float'>, {0: 0.716, 1: 0.284})
 ```
@@ -136,6 +132,16 @@ print(bn.get_compact())
 bn.print_factors(bn.get_factors())
 bn.print_result("R", {"J": 1, "M": 1})
  ```
+Este codigo retorna el siguiente resultado dada la variable y la evidencia en `print_result("R", {"J": 1, "M": 1})`:
+```python
++------+----------+
+| R    |   phi(R) |
++======+==========+
+| R(0) |    0.716 |
++------+----------+
+| R(1) |    0.284 |
++------+----------+
+```
 
 ## Autor
 #### Javier Mombiela
