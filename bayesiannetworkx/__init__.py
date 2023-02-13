@@ -1,4 +1,5 @@
-from itertools import product
+from collections import defaultdict
+from prettytable import PrettyTable, ALL
 
 
 class BayesianNetworkx():
@@ -40,19 +41,6 @@ class BayesianNetworkx():
 
         return True
 
-    def print_all_cpts(self):
-        print("\nForma Compacta:")
-        print("+-----------------------+-----------------------+")
-        print("| Nodo([Padres])        | CPT                   |")
-        print("+-----------------------+-----------------------+")
-        for node in self.nodes:
-            cpt = node["cpt"]
-            node_name = node["name"]
-            parents = node["parents"]
-            cpt_str = " | ".join("{}:{}".format(k, v) for k, v in cpt.items())
-            print("| {} ({}) | {} |".format(node_name, parents, cpt_str))
-            print("+-----------------------+-----------------------+")
-
     # Imprime la red bayesiana en forma compacta
     # No toma parametros
     def get_compact(self):
@@ -77,27 +65,38 @@ class BayesianNetworkx():
     # Imprime la red bayesiana en forma de factores
     # No toma parametros
     def get_factors(self):
-        print("\n---FACTORES DE LA RED---")
-        result = ""
+        result = []
         for node in self.nodes:
             cpt = node["cpt"]
             node_name = node["name"]
             parents = node["parents"]
 
             if not parents:
-                result += f"P({node_name})\n"
+                result.append(("P(" + node_name + ")", "", "", ""))
+                for parent_states, (phi_0, phi_1) in cpt.items():
+                    result.append(("", node_name + "(0)", phi_0, ""))
+                    result.append(("", node_name + "(1)", phi_1, ""))
+                    result.append(("", "", "", ""))
             else:
-                parents_str = ", ".join(parents)
-                result += f"P({node_name}|{parents_str})\n"
-
-            for parent_states, (phi_0, phi_1) in cpt.items():
-                parent_states_str = ", ".join(str(s) for s in parent_states)
-                result += f"  {parent_states_str}: {phi_0}, {phi_1}\n"
+                result.append(
+                    ("P(" + node_name + "|" + ", ".join(parents) + ")", "", "", ""))
+                for parent_states, (phi_0, phi_1) in cpt.items():
+                    parent_states_str = ", ".join(
+                        str(s) for s in parent_states)
+                    result.append(("", parent_states_str, phi_0, phi_1))
 
         return result
 
-    def probability(self, node, evidence=None):
+    def print_factors(self, factors):
+        print("\n---FACTORES DE LA RED---")
+        table = PrettyTable()
+        table.field_names = ["var", "phi(var)", "P(0)", "P(1)"]
+        table.hrules = ALL
+        for factor in factors:
+            table.add_row(factor)
+        print(table)
 
+    def probability(self, node, evidence=None):
         if evidence is None:
             evidence = {}
         index = tuple(evidence[parent_name]
@@ -117,12 +116,59 @@ class BayesianNetworkx():
         print("| {}(1) | {:8.3f} |".format(variable, phi_1))
         print("+------+----------+")
 
-    def enumerate(self, variables, evidendce):
-        if not variables:
-            return 1
+    # funcion para imprimir la probabilidad de una variable dada evidencia
+    def print_result(self, variable, evidence={}):
+        print("\n---INFERENCIA EXACTA---")
+        header = "+------+----------+"
+        print(header)
+        print("| {}    |   phi({}) |".format(variable, variable))
+        print("+======+==========+")
+        for key in [0, 1]:
+            result = self.enumeration_ask(variable, evidence)
+            print("| {}({}) | {:8.3f} |".format(variable, key, result[key]))
+            print(header)
 
-        Y = variables[0]
-        if Y in evidendce:
-            return self.probability(Y, evidendce[Y])[evidendce[Y]] * self.enumerate(variables[1:], evidendce)
+    def getProbability(self, variable, value, evidence={}):
+        node = next(n for n in self.nodes if n["name"] == variable)
+        phi_0, phi_1 = self.probability(node, evidence)
+        if value == 0:
+            return phi_0
+        elif value == 1:
+            return phi_1
 
-        return self.probability(Y, 0)[0] * self.enumerate(variables[1:], evidendce) + self.probability(Y, 1)[1] * self.enumerate(variables[1:], evidendce)
+    # Funcion que calcula la probabilidad de una variable dada evidencia
+    # Parametros: variable: una lista de variables, evidencia: un diccionario con variables y sus valores
+
+    def enumeration_ask(self, X, evidence):
+
+        Q = defaultdict(float)
+        X_node = next(n for n in self.nodes if n["name"] == X)
+        for xi in [0, 1]:
+            evidence[X] = xi
+            Q[xi] = self.enumerate_all(self.nodes, evidence)
+        return self.normalize(Q)
+
+    # funcion recursuva para obtener la inferencia exacta usando el algoritmo de enumeracion
+    def enumerate_all(self, nodes, evidence):
+
+        if not nodes:
+            return 1.0
+        Y = nodes[0]
+        Y_name = Y["name"]
+        if Y_name in evidence:
+            return Y["cpt"][tuple(evidence[parent_name] for parent_name in Y["parents"])][evidence[Y_name]] * self.enumerate_all(nodes[1:], evidence)
+        else:
+            sum = 0
+            for yi in [0, 1]:
+                evidence[Y_name] = yi
+                sum += Y["cpt"][tuple(evidence[parent_name] for parent_name in Y["parents"])
+                                ][yi] * self.enumerate_all(nodes[1:], evidence)
+            del evidence[Y_name]
+            return sum
+
+    def normalize(self, Q):
+
+        total = sum(Q.values())
+        for x in Q:
+            Q[x] /= total
+        return Q

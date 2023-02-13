@@ -11,8 +11,7 @@ bn.add_node("J", ["A"], {
 bn.add_node("M", ["A"], {
     (0,): [0.99, 0.01], (1,): [0.3, 0.7]})
 
-
 print(bn.check_model())
 print(bn.get_compact())
-print(bn.get_factors())
-bn.printProbability("A", {"R": 1, "T": 1})
+bn.print_factors(bn.get_factors())
+bn.print_result("R", {"J": 1, "M": 1})
